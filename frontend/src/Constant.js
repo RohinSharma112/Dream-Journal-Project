@@ -1,0 +1,1 @@
+export const url = "https://dy5yjcnu28.execute-api.us-east-1.amazonaws.com/dev";

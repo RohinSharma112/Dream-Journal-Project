@@ -1,0 +1,917 @@
+Resources:
+
+  CheckUserWellnessFunction:
+    Type: AWS::Lambda::Function
+    Properties: 
+      FunctionName: CheckUserWellness
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.8
+      Code:
+        S3Bucket: rhs3lambdastore
+        S3Key: CheckWithUsers.zip
+      Role: 'arn:aws:iam::271380558708:role/LabRole'
+
+  CheckUserWellnessEventRule:
+    Type: "AWS::Events::Rule"
+    Properties: 
+      Description: "Invoke CheckUserWellness every 1 minutes"
+      ScheduleExpression: "rate(1 minute)"
+      Targets: 
+        - 
+          Arn: 
+            Fn::GetAtt: 
+              - "CheckUserWellnessFunction"
+              - "Arn"
+          Id: "TargetFunctionV1"
+          
+  CheckUserWellnessPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties: 
+      Action: "lambda:InvokeFunction"
+      FunctionName: 
+        Ref: CheckUserWellnessFunction
+      Principal: "events.amazonaws.com"
+      SourceArn: 
+        Fn::GetAtt: 
+          - "CheckUserWellnessEventRule"
+          - "Arn"
+  
+  WellnessReminderSNS:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      DisplayName: 'Wellness Reminder'
+      TopicName: 'WellnessReminderSNS'
+  
+  WellnessReminderSNSPolicy:
+    Type: 'AWS::SNS::TopicPolicy'
+    Properties:
+      Topics:
+        - Ref: 'WellnessReminderSNS'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal: '*'
+            Action: 
+              - 'SNS:Publish'
+              - 'SNS:Subscribe'
+              - 'SNS:GetTopicAttributes'
+              - 'SNS:ListSubscriptionsByTopic'
+            Resource:
+              Ref: 'WellnessReminderSNS'
+
+  UserLoginFunction:
+    Type: AWS::Lambda::Function
+    Properties: 
+      FunctionName: AppUserLogin
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.8
+      Code:
+        S3Bucket: rhs3lambdastore
+        S3Key: UserLogin.zip
+      Role: 'arn:aws:iam::271380558708:role/LabRole'
+
+  UserSignupFunction:
+    Type: AWS::Lambda::Function
+    Properties: 
+      FunctionName: AppUserSignup
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.8
+      Code:
+        S3Bucket: rhs3lambdastore
+        S3Key: UserSignUp.zip
+      Role: 'arn:aws:iam::271380558708:role/LabRole'
+
+  CreateDreamEntryFunction:
+    Type: AWS::Lambda::Function
+    Properties: 
+      FunctionName: CreateDreamEntry
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.8
+      Code:
+        S3Bucket: rhs3lambdastore
+        S3Key: DreamEntry.zip
+      Role: 'arn:aws:iam::271380558708:role/LabRole'
+
+  ViewDreamLogsFunction:
+    Type: AWS::Lambda::Function
+    Properties: 
+      FunctionName: ViewDreamLogs
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.8
+      Code:
+        S3Bucket: rhs3lambdastore
+        S3Key: DreamLogs.zip
+      Role: 'arn:aws:iam::271380558708:role/LabRole'
+
+  ViewDreamInfoFunction:
+    Type: AWS::Lambda::Function
+    Properties: 
+      FunctionName: ViewDreamInfo
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.8
+      Code:
+        S3Bucket: rhs3lambdastore
+        S3Key: GetDreamDetails.zip
+      Role: 'arn:aws:iam::271380558708:role/LabRole'
+  
+  ImgtoTextFunction:
+    Type: AWS::Lambda::Function
+    Properties: 
+      FunctionName: ConvertImgtoText
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.8
+      Code:
+        S3Bucket: rhs3lambdastore
+        S3Key: ImgToText.zip
+      Role: 'arn:aws:iam::271380558708:role/LabRole'
+
+  TermAssignmentApi:
+    Type: "AWS::ApiGateway::RestApi"
+    Properties: 
+      Name: "termassignment"
+      Description: "APIs for term assignment"
+      FailOnWarnings: "true"
+    
+  ImgToTextResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties: 
+      ParentId: 
+        Fn::GetAtt: 
+          - "TermAssignmentApi"
+          - "RootResourceId"
+      PathPart: "img-to-text"
+      RestApiId: 
+        Ref: "TermAssignmentApi"
+
+  ImgToTextMethod:
+    Type: "AWS::ApiGateway::Method"
+    Properties: 
+      AuthorizationType: "NONE"
+      HttpMethod: "POST"
+      ResourceId: 
+        Ref: "ImgToTextResource"
+      RestApiId: 
+        Ref: "TermAssignmentApi"
+      Integration:
+        Type: "AWS"
+        IntegrationHttpMethod: "POST"
+        Uri: 
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ImgtoTextFunction.Arn}/invocations
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates:
+              application/json: $input.json('$')
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: $input.json('$')
+      RequestParameters:
+        method.request.querystring.name: false
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
+
+  ImgToTextLambdaPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties: 
+      Action: "lambda:InvokeFunction"
+      FunctionName: 
+        Ref: ImgtoTextFunction
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: 
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TermAssignmentApi}/*/POST/img-to-text
+
+  ImgToTextCors:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      AuthorizationType: "NONE"
+      HttpMethod: "OPTIONS"
+      ResourceId: 
+        Ref: "ImgToTextResource"
+      RestApiId: 
+        Ref: "TermAssignmentApi"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            "application/json": "Empty"
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Origin": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Headers": true
+      Integration:
+        Type: "MOCK"
+        RequestTemplates:
+          "application/json": "{ \"statusCode\": 200 }"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates:
+              "application/json": "Empty"
+            ResponseParameters:
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+              "method.response.header.Access-Control-Allow-Methods": "'POST,OPTIONS'"
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    
+  UserResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties: 
+      ParentId: 
+        Fn::GetAtt: 
+          - "TermAssignmentApi"
+          - "RootResourceId"
+      PathPart: "user"
+      RestApiId: 
+        Ref: "TermAssignmentApi"
+
+  UserLoginResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties: 
+      ParentId: 
+        Ref: "UserResource"
+      PathPart: "login"
+      RestApiId: 
+        Ref: "TermAssignmentApi"
+    
+  UserLoginMethod:
+    Type: "AWS::ApiGateway::Method"
+    Properties: 
+      AuthorizationType: "NONE"
+      HttpMethod: "POST"
+      ResourceId: 
+        Ref: "UserLoginResource"
+      RestApiId: 
+        Ref: "TermAssignmentApi"
+      Integration:
+        Type: "AWS"
+        IntegrationHttpMethod: "POST"
+        Uri: 
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UserLoginFunction.Arn}/invocations
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates:
+              application/json: $input.json('$')
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: $input.json('$')
+      RequestParameters:
+        method.request.querystring.name: false
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
+
+  UserCors:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      AuthorizationType: "NONE"
+      HttpMethod: "OPTIONS"
+      ResourceId:
+        Ref: "UserResource"
+      RestApiId:
+        Ref: "TermAssignmentApi"
+      Integration:
+        Type: "MOCK"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: "{}"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        RequestTemplates:
+          application/json: "{ \"statusCode\": 200 }"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  UserLoginCors:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      AuthorizationType: "NONE"
+      HttpMethod: "OPTIONS"
+      ResourceId:
+        Ref: "UserLoginResource"
+      RestApiId:
+        Ref: "TermAssignmentApi"
+      Integration:
+        Type: "MOCK"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: "{}"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        RequestTemplates:
+          application/json: "{ \"statusCode\": 200 }"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  
+  UserLoginLambdaPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: 
+        Ref: "UserLoginFunction"
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: 
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TermAssignmentApi}/*/*/user/login
+  
+  UserResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties: 
+      ParentId: 
+        Fn::GetAtt: 
+          - "TermAssignmentApi"
+          - "RootResourceId"
+      PathPart: "user"
+      RestApiId: 
+        Ref: "TermAssignmentApi"
+
+  SignupResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties: 
+      ParentId: 
+        Ref: "UserResource"
+      PathPart: "signup"
+      RestApiId: 
+        Ref: "TermAssignmentApi"
+
+  UserSignupPostMethod:
+    Type: "AWS::ApiGateway::Method"
+    Properties: 
+      AuthorizationType: "NONE"
+      HttpMethod: "POST"
+      ResourceId: 
+        Ref: "SignupResource"
+      RestApiId: 
+        Ref: "TermAssignmentApi"
+      Integration:
+        Type: "AWS"
+        IntegrationHttpMethod: "POST"
+        Uri: 
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UserSignupFunction.Arn}/invocations
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates:
+              application/json: $input.json('$')
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: $input.json('$')
+      RequestParameters:
+        method.request.querystring.name: false
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
+
+  UserSignupCorsMethod:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      AuthorizationType: "NONE"
+      HttpMethod: "OPTIONS"
+      ResourceId:
+        Ref: "SignupResource"
+      RestApiId:
+        Ref: "TermAssignmentApi"
+      Integration:
+        Type: "MOCK"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: "{}"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        RequestTemplates:
+          application/json: "{ \"statusCode\": 200 }"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  UserSignupLambdaPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: 
+        Ref: "UserSignupFunction"
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: 
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TermAssignmentApi}/*/*/user/signup
+  
+  DreamsResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties: 
+      ParentId: 
+        Fn::GetAtt: 
+          - "TermAssignmentApi"
+          - "RootResourceId"
+      PathPart: "dreams"
+      RestApiId: 
+        Ref: "TermAssignmentApi"
+
+  CreateDreamEntryResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties: 
+      ParentId: 
+        Ref: "DreamsResource"
+      PathPart: "create-dream-entry"
+      RestApiId: 
+        Ref: "TermAssignmentApi"
+
+  CreateDreamEntryPostMethod:
+    Type: "AWS::ApiGateway::Method"
+    Properties: 
+      AuthorizationType: "NONE"
+      HttpMethod: "POST"
+      ResourceId: 
+        Ref: "CreateDreamEntryResource"
+      RestApiId: 
+        Ref: "TermAssignmentApi"
+      Integration:
+        Type: "AWS"
+        IntegrationHttpMethod: "POST"
+        Uri: 
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateDreamEntryFunction.Arn}/invocations
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates:
+              application/json: $input.json('$')
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: $input.json('$')
+      RequestParameters:
+        method.request.querystring.name: false
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
+
+  CreateDreamEntryCorsMethod:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      AuthorizationType: "NONE"
+      HttpMethod: "OPTIONS"
+      ResourceId:
+        Ref: "CreateDreamEntryResource"
+      RestApiId:
+        Ref: "TermAssignmentApi"
+      Integration:
+        Type: "MOCK"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: "{}"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        RequestTemplates:
+          application/json: "{ \"statusCode\": 200 }"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  DreamsCorsMethod:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      AuthorizationType: "NONE"
+      HttpMethod: "OPTIONS"
+      ResourceId:
+        Ref: "DreamsResource"
+      RestApiId:
+        Ref: "TermAssignmentApi"
+      Integration:
+        Type: "MOCK"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: "{}"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        RequestTemplates:
+          application/json: "{ \"statusCode\": 200 }"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  CreateDreamEntryLambdaPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: 
+        Ref: "CreateDreamEntryFunction"
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: 
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TermAssignmentApi}/*/*/dreams/create-dream-entry
+
+  ViewDreamLogsResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties: 
+      ParentId: 
+        Ref: "DreamsResource"
+      PathPart: "view-dream-logs"
+      RestApiId: 
+        Ref: "TermAssignmentApi"
+
+  ViewDreamLogsPostMethod:
+    Type: "AWS::ApiGateway::Method"
+    Properties: 
+      AuthorizationType: "NONE"
+      HttpMethod: "POST"
+      ResourceId: 
+        Ref: "ViewDreamLogsResource"
+      RestApiId: 
+        Ref: "TermAssignmentApi"
+      Integration:
+        Type: "AWS"
+        IntegrationHttpMethod: "POST"
+        Uri: 
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ViewDreamLogsFunction.Arn}/invocations
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates:
+              application/json: $input.json('$')
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: $input.json('$')
+      RequestParameters:
+        method.request.querystring.name: false
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
+
+  ViewDreamLogsCorsMethod:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      AuthorizationType: "NONE"
+      HttpMethod: "OPTIONS"
+      ResourceId:
+        Ref: "ViewDreamLogsResource"
+      RestApiId:
+        Ref: "TermAssignmentApi"
+      Integration:
+        Type: "MOCK"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: "{}"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        RequestTemplates:
+          application/json: "{ \"statusCode\": 200 }"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  ViewDreamLogsLambdaPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: 
+        Ref: "ViewDreamLogsFunction"
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: 
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TermAssignmentApi}/*/*/dreams/view-dream-logs
+  
+  DreamResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties: 
+      ParentId: 
+        Ref: "DreamsResource"
+      PathPart: "dream"
+      RestApiId: 
+        Ref: "TermAssignmentApi"
+
+  ViewDreamInfoResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties: 
+      ParentId: 
+        Ref: "DreamResource"
+      PathPart: "{dream_id}"
+      RestApiId: 
+        Ref: "TermAssignmentApi"
+  
+  ViewDreamInfoMethod:
+    Type: "AWS::ApiGateway::Method"
+    Properties: 
+      AuthorizationType: "NONE"
+      HttpMethod: "GET"
+      ResourceId: 
+        Ref: "ViewDreamInfoResource"
+      RestApiId: 
+        Ref: "TermAssignmentApi"
+      Integration:
+        Type: "AWS"
+        IntegrationHttpMethod: "POST"
+        Uri: 
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ViewDreamInfoFunction.Arn}/invocations
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates:
+              application/json: $input.json('$')
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: "{ \"dreamId\" : \"$input.params('dreamId')\" }"
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
+  
+  ViewDreamInfoCors:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      AuthorizationType: "NONE"
+      HttpMethod: "OPTIONS"
+      ResourceId:
+        Ref: "ViewDreamInfoResource"
+      RestApiId:
+        Ref: "TermAssignmentApi"
+      Integration:
+        Type: "MOCK"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: "{}"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        RequestTemplates:
+          application/json: "{ \"statusCode\": 200 }"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+  
+  DreamResourceCors:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      AuthorizationType: "NONE"
+      HttpMethod: "OPTIONS"
+      ResourceId:
+        Ref: "DreamResource"
+      RestApiId:
+        Ref: "TermAssignmentApi"
+      Integration:
+        Type: "MOCK"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: "{}"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        RequestTemplates:
+          application/json: "{ \"statusCode\": 200 }"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  ViewDreamInfoLambdaPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: 
+        Ref: "ViewDreamInfoFunction"
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: 
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TermAssignmentApi}/*/*/dreams/dream/*
+  
+  DevApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - ViewDreamInfoMethod
+      - ViewDreamLogsPostMethod
+      - CreateDreamEntryPostMethod
+      - ImgToTextMethod
+      - UserLoginMethod
+      - UserSignupPostMethod
+    Properties:
+      RestApiId: !Ref TermAssignmentApi
+  
+  DevApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref TermAssignmentApi
+      DeploymentId: !Ref DevApiDeployment
+      StageName: dev
+
+  UserTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: 'user'
+      AttributeDefinitions:
+        - AttributeName: 'user_id'
+          AttributeType: 'S'
+      KeySchema:
+        - AttributeName: 'user_id'
+          KeyType: 'HASH'
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5 
+
+  DreamEntryTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: 'dream-entry'
+      AttributeDefinitions:
+        - AttributeName: 'dream_id'
+          AttributeType: 'S'
+      KeySchema:
+        - AttributeName: 'dream_id'
+          KeyType: 'HASH'
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+  
+  PTermEC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH and HTTP access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '3000'
+          ToPort: '3000'
+          CidrIp: 0.0.0.0/0
+  
+  PTermEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: ami-0f34c5ae932e6f0e4
+      SecurityGroups:
+        - Ref: PTermEC2SecurityGroup
+      IamInstanceProfile: LabInstanceProfile
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          cat >> /home/ec2-user/.bashrc <<'EOF'
+          # Auto-generated commands
+          sudo yum update -y
+          
+          sudo yum install unzip -y
+
+          REST_API_ID=$(aws apigateway get-rest-apis --query "items[?name=='TermAssignment'].id | [0]" --output text)
+
+          API_URL=$(aws apigateway get-stage --rest-api-id $REST_API_ID --stage-name dev --query 'invokeUrl' --output text)
+
+          echo "API_URL=${API_URL}" | sudo tee -a /etc/environment
+
+          aws s3 cp s3://rh-ec2files/frontend.zip .
+          unzip frontend.zip -d .
+
+          # Install Node.js and npm
+          sudo yum install -y nodejs
+
+          # run npm start
+          cd frontend
+          npm install
+          npm start
+          # End of auto-generated commands
+          EOF
+
+
+Outputs:
+
+  TermAssignmentApiURL:
+    Description: 'URL for the termassignment API Gateway'
+    Value: 
+      Fn::Sub: 'https://${TermAssignmentApi}.execute-api.${AWS::Region}.amazonaws.com/'
+
+  ImgToTextFunctionArn:
+    Description: 'ARN for ImgtoText Lambda function'
+    Value: 
+      Ref: ImgtoTextFunction
+
+  UserLoginFunctionArn:
+    Description: 'ARN for UserLogin Lambda function'
+    Value: 
+      Ref: UserLoginFunction
+
+  UserSignupFunctionArn:
+    Description: 'ARN for UserSignup Lambda function'
+    Value: 
+      Ref: UserSignupFunction
+
+  CreateDreamEntryFunctionArn:
+    Description: 'ARN for CreateDreamEntry Lambda function'
+    Value: 
+      Ref: CreateDreamEntryFunction
+
+  ViewDreamLogsFunctionArn:
+    Description: 'ARN for ViewDreamLogs Lambda function'
+    Value: 
+      Ref: ViewDreamLogsFunction
+
+  ViewDreamInfoFunctionArn:
+    Description: 'ARN for ViewDreamInfo Lambda function'
+    Value: 
+      Ref: ViewDreamInfoFunction
+  
+  PTermEC2PublicIp:
+    Description: 'Public IP for the EC2 instance'
+    Value: 
+      Fn::GetAtt: 
+        - PTermEC2
+        - PublicIp
+
+  PTermEC2DNS:
+    Description: 'Public DNS for the EC2 instance'
+    Value: 
+      Fn::GetAtt: 
+        - PTermEC2
+        - PublicDnsName
+
+  CheckUserWellnessEventRuleArn:
+    Description: 'ARN for the EventBridge rule that triggers CheckUserWellness'
+    Value: 
+      Ref: CheckUserWellnessEventRule
+
+
+
+
+
+
+
+

@@ -1,0 +1,92 @@
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: 
+        radial-gradient(circle at center, rgba(238, 130, 238, 0.5), transparent),
+        linear-gradient(315deg, #551a8b 0%, #9932cc 25%, #8a2be2 50%, #da70d6 74%, #9370db 100%);
+}
+
+.entryBox {
+    width: 650px;
+    padding: 30px;
+    height: 80%;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+}
+
+.title {
+    font-family: 'Fantasy', serif;
+    color: #4b0082;
+    text-align: center;
+    font-size: 28px;
+}
+
+.inputField, .textarea, .fileInput, .dropdown {
+    width: 100%;
+    padding: 10px;
+    margin-top: 15px;
+    border: 1px solid #4b0082;
+    border-radius: 5px;
+    font-size: 18px;
+}
+
+.textarea {
+    height: 100px;
+    resize: vertical;
+}
+
+.fileInput {
+    margin-top: 20px;
+}
+
+.dropdown {
+    cursor: pointer;
+}
+
+.submitButton {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 10px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    background-color: #4b0082;
+    color: #ffffff;
+    align-self: center;
+    margin-top: 20px;
+}
+
+.submitButton:hover {
+    background-color: #6a2db8;
+}
+
+.successMessage {
+    background-color: #dff0d8;
+    border: 1px solid #d0e9c6;
+    color: #3c763d;
+    font-size:22px;
+    text-align: center;
+  }
+
+.errorMsg {
+    color: #ff0000;  
+    font-size: 18px;
+    font-style: italic; 
+    text-align: center;
+}
+
+.backButton {
+    background-color: mediumslateblue;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 15%;
+  }

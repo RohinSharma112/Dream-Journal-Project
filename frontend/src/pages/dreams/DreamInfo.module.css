@@ -1,0 +1,53 @@
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at center, rgba(238, 130, 238, 0.5), transparent),
+                linear-gradient(315deg, #551a8b 0%, #9932cc 25%, #8a2be2 50%, #da70d6 74%, #9370db 100%);
+    height: 100vh;
+    width: 100%;
+}
+
+.dreamBox {
+    width: 40%;
+    height: 55%;
+    background-color: #301934;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.dream_title {
+    font-size: 1.8rem;
+    text-align: center;
+    color:whitesmoke;
+}
+
+.dataContainer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    color:whitesmoke;
+}
+
+
+.dataContainer p {
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.description {
+    background-color: white;
+    color: black;
+    padding: 15px;
+    border-radius: 5px;
+    font-size: 18px;
+    flex-grow: 1;
+}
+

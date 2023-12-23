@@ -1,0 +1,72 @@
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: 
+        radial-gradient(circle at center, rgba(238, 130, 238, 0.5), transparent),
+        linear-gradient(315deg, #551a8b 0%, #9932cc 25%, #8a2be2 50%, #da70d6 74%, #9370db 100%);
+}
+
+.fairyTaleBox {
+    width: 350px;
+    height: 400px;
+    background: #ffffff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3); 
+    border-radius: 15px; 
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer; 
+    transition: transform 0.2s; 
+}
+
+.fairyTaleBox:hover {
+    transform: translateY(-10px); 
+}
+
+.title {
+    font-family: 'Fantasy', serif; 
+    font-size: 24px;
+    color: #4b0082; 
+    margin: 0;
+    font-weight: bold;
+}
+
+.description {
+    font-family: 'Arial', sans-serif;
+    font-size: 19.5px;
+    color: black;
+    text-align: center;
+}
+
+.loginButton {
+    font-family: 'Arial', sans-serif;
+    background-color: #4b0082; 
+    color: #ffffff;
+    font-size: medium;
+    padding: 15px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s; 
+}
+
+.loginButton:hover {
+    background-color: #6a2db8; 
+}
+
+.footer {
+    position: absolute;
+    bottom: 0px; 
+    width: 100%;
+    text-align: center;
+    font-family: 'Fantasy', serif; 
+    color: #fff5e1; 
+    font-size: 21px;
+    padding: 10px 0;  
+    background: rgba(0, 0, 0, 0.5); 
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3); 
+}

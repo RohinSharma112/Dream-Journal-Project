@@ -1,0 +1,106 @@
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: 
+        radial-gradient(circle at center, rgba(238, 130, 238, 0.5), transparent),
+        linear-gradient(315deg, #551a8b 0%, #9932cc 25%, #8a2be2 50%, #da70d6 74%, #9370db 100%);
+}
+
+.logsBox {
+    width: 650px;
+    padding: 20px 30px 30px 30px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: relative;
+}
+
+.title {
+    font-family: 'Fantasy', serif;
+    color: rebeccapurple;
+    text-align: center;
+    font-size: 34px;         
+    font-weight: bolder;       
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2); 
+    padding: 10px 16px;     
+    border-radius: 10px;       
+}
+
+.logsTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Arial', sans-serif;
+    margin-bottom: 90px;
+}
+
+.logsTable th {
+    color: #ffffff;
+    background-color: darkmagenta;
+    font-weight: bold;
+    font-size: 16px;
+    padding: 8px 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.logsTable td {
+    border-top: 1px solid #e0e0e0;
+    padding: 10px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.logsTable tr:hover td {
+    background-color: lightgray;
+}
+
+.logsTable tr {
+    margin-bottom: 5px;
+}
+
+.noLogsMsg {
+    color: #4b0082;
+    font-size: 20px;
+    text-align: center;
+    margin-top: 15px;
+}
+
+.entryButton {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    background-color: slateblue;
+    color: #ffffff;
+    align-self: center;
+}
+
+.entryButton:hover {
+    background-color: #6a2db8;
+}
+
+.logoutButton {
+    background-color: rebeccapurple;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 18px;
+    width: 25%;
+    position: absolute;  
+    top: 20px;           
+    right: 20px;      
+    z-index: 10;         
+}
+
+.logoutButton:hover {
+    background-color: slateblue;
+}
